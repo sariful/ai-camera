@@ -68,7 +68,7 @@ APP_CONSTANTS = {
 # AI Detection settings
 AI_DETECTION_SETTINGS = {
     "enabled": True,            # Enable/disable AI detection
-    "model_name": "yolov8x.pt", # YOLOv8 model variant (n=nano, s=small, m=medium, l=large, x=extra-large)
+    "model_name": "yolov8m.pt", # YOLOv8 model variant (n=nano, s=small, m=medium, l=large, x=extra-large)
     "confidence_threshold": 0.5, # Minimum confidence score for detections (0.0-1.0)
     "detection_on_all_cameras": True,  # Apply detection to all cameras or specific ones
     "target_cameras": [0, 1, 2], # Camera indices to apply detection (0-based)

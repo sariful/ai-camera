@@ -148,7 +148,9 @@ class DisplayManager:
     
     def combine_frames(self, frames):
         """
-        Combine multiple frames side by side.
+        Combine multiple frames in a 2-row layout:
+        - First row: 2 cameras
+        - Second row: remaining cameras
         
         Args:
             frames (list): List of frame arrays
@@ -158,7 +160,51 @@ class DisplayManager:
         """
         if not frames:
             return None
-        return np.hstack(frames)
+        
+        num_cameras = len(frames)
+        if num_cameras == 0:
+            return None
+        
+        # Ensure all frames have the same dimensions
+        frame_height, frame_width = frames[0].shape[:2]
+        
+        if num_cameras == 1:
+            return frames[0]
+        elif num_cameras == 2:
+            # Just place both cameras side by side in one row
+            return np.hstack(frames)
+        else:
+            # 2-row layout: first row gets 2 cameras, second row gets the rest
+            cameras_first_row = 2
+            cameras_second_row = num_cameras - cameras_first_row
+            
+            # Create first row with first 2 cameras
+            first_row = np.hstack(frames[:cameras_first_row])
+            
+            # Create second row with remaining cameras
+            if cameras_second_row == 1:
+                # If only one camera in second row, center it by adding padding
+                second_row = frames[cameras_first_row]
+                # Add padding to match width of first row
+                padding_width = first_row.shape[1] - second_row.shape[1]
+                if padding_width > 0:
+                    left_padding = padding_width // 2
+                    right_padding = padding_width - left_padding
+                    left_pad = np.zeros((frame_height, left_padding, 3), dtype=np.uint8)
+                    right_pad = np.zeros((frame_height, right_padding, 3), dtype=np.uint8)
+                    second_row = np.hstack([left_pad, second_row, right_pad])
+            else:
+                # Multiple cameras in second row
+                second_row = np.hstack(frames[cameras_first_row:])
+                # Add padding if second row is narrower than first row
+                width_diff = first_row.shape[1] - second_row.shape[1]
+                if width_diff > 0:
+                    padding = np.zeros((frame_height, width_diff, 3), dtype=np.uint8)
+                    second_row = np.hstack([second_row, padding])
+            
+            # Combine both rows vertically
+            combined = np.vstack([first_row, second_row])
+            return combined
     
     def add_overlay_info(self, combined_frame):
         """
@@ -167,12 +213,6 @@ class DisplayManager:
         Args:
             combined_frame (numpy.ndarray): Combined frame to add overlay to
         """
-        cv2.putText(combined_frame, f"FPS Target: {DISPLAY_SETTINGS['target_fps']} | Sync Check", 
-                   (10, 30), 
-                   eval(TEXT_SETTINGS["font"]), 
-                   TEXT_SETTINGS["font_scale"], 
-                   TEXT_SETTINGS["color_green"], 
-                   TEXT_SETTINGS["thickness"])
     
     def display_frame(self, combined_frame):
         """

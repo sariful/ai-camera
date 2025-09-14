@@ -123,7 +123,7 @@ try:
             # Check timestamp synchronization (optional diagnostic)
             if len(timestamps) > 1:
                 max_time_diff = max(timestamps) - min([t for t in timestamps if t > 0])
-                if max_time_diff > 0.1:  # More than 100ms difference
+                if max_time_diff > 0.3:  # More than 300ms difference
                     print(f"⏱️ Frame time difference: {max_time_diff:.3f}s")
 
             # Arrange frames side by side (3 cameras horizontally)

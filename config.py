@@ -64,3 +64,20 @@ APP_CONSTANTS = {
     "min_delay": 1,             # Minimum delay for cv2.waitKey (ms)
     "placeholder_text_pos": (150, 180)  # Position for disconnected camera text
 }
+
+# AI Detection settings
+AI_DETECTION_SETTINGS = {
+    "enabled": True,            # Enable/disable AI detection
+    "model_name": "yolov8x.pt", # YOLOv8 model variant (n=nano, s=small, m=medium, l=large, x=extra-large)
+    "confidence_threshold": 0.5, # Minimum confidence score for detections (0.0-1.0)
+    "detection_on_all_cameras": True,  # Apply detection to all cameras or specific ones
+    "target_cameras": [0, 1, 2], # Camera indices to apply detection (0-based)
+    "draw_bounding_boxes": True, # Draw bounding boxes around detected humans
+    "show_confidence": True,    # Show confidence scores in labels
+    "detection_color": (0, 255, 0), # Color for bounding boxes (BGR format)
+    "text_color": (0, 0, 0),    # Color for detection labels (BGR format)
+    "box_thickness": 2,         # Thickness of bounding boxes
+    "max_detections_per_frame": 10, # Maximum number of detections to process per frame
+    "enable_stats_overlay": True,    # Show detection statistics on frames
+    "stats_position": (10, 30)      # Position for stats text overlay
+}

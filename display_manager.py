@@ -1,23 +1,38 @@
 """
 Display Manager Module for AI Camera System
 
-Handles frame processing, synchronization, and display of multiple camera feeds.
+Handles frame processing, synchronization, display of multiple camera feeds, and AI-based human detection.
 """
 
 import cv2
 import time
 import numpy as np
-from config import CAMERA_SETTINGS, DISPLAY_SETTINGS, TEXT_SETTINGS, APP_CONSTANTS
+from config import CAMERA_SETTINGS, DISPLAY_SETTINGS, TEXT_SETTINGS, APP_CONSTANTS, AI_DETECTION_SETTINGS
+from ai_detector import HumanDetector
 
 
 class DisplayManager:
     """
-    Manages the display of multiple camera feeds with synchronization and frame processing.
+    Manages the display of multiple camera feeds with synchronization, frame processing, and AI-based human detection.
     """
     
     def __init__(self):
-        """Initialize the display manager."""
+        """Initialize the display manager with AI detection capabilities."""
         self.target_frame_time = 1.0 / DISPLAY_SETTINGS["target_fps"]
+        
+        # Initialize AI detection
+        self.human_detector = None
+        if AI_DETECTION_SETTINGS["enabled"]:
+            try:
+                self.human_detector = HumanDetector(
+                    model_name=AI_DETECTION_SETTINGS["model_name"],
+                    confidence_threshold=AI_DETECTION_SETTINGS["confidence_threshold"]
+                )
+                print("🤖 AI Human Detection initialized successfully!")
+            except Exception as e:
+                print(f"⚠️ Failed to initialize AI detection: {e}")
+                print("📷 Continuing without AI detection...")
+                self.human_detector = None
         
     def create_placeholder_frame(self, camera_id):
         """
@@ -63,6 +78,54 @@ class DisplayManager:
                 timestamps.append(0)
                 
         return frames, timestamps
+    
+    def apply_ai_detection(self, frames, camera_threads):
+        """
+        Apply AI-based human detection to frames.
+        
+        Args:
+            frames (list): List of camera frames
+            camera_threads (list): List of CameraThread instances
+            
+        Returns:
+            list: Frames with AI detection annotations
+        """
+        if not self.human_detector or not AI_DETECTION_SETTINGS["enabled"]:
+            return frames
+        
+        processed_frames = []
+        
+        for i, frame in enumerate(frames):
+            camera_id = camera_threads[i].camera_id if i < len(camera_threads) else i
+            
+            # Check if detection should be applied to this camera
+            if (AI_DETECTION_SETTINGS["detection_on_all_cameras"] or 
+                camera_id in AI_DETECTION_SETTINGS["target_cameras"]):
+                
+                # Skip detection if frame is a placeholder (all zeros in top-left corner)
+                if np.sum(frame[0:50, 0:50]) == 0:  # Likely a placeholder frame
+                    processed_frames.append(frame)
+                    continue
+                
+                try:
+                    # Detect humans in the frame
+                    detections = self.human_detector.detect_humans(frame)
+                    
+                    # Limit detections if specified
+                    max_detections = AI_DETECTION_SETTINGS["max_detections_per_frame"]
+                    if len(detections) > max_detections:
+                        detections = detections[:max_detections]
+                    
+                    # Draw detections if enabled
+                    if AI_DETECTION_SETTINGS["draw_bounding_boxes"] and detections:
+                        frame = self.human_detector.draw_detections(frame, detections, camera_id)
+                    
+                except Exception as e:
+                    print(f"⚠️ AI detection error for camera {camera_id}: {e}")
+            
+            processed_frames.append(frame)
+        
+        return processed_frames
     
     def check_synchronization(self, timestamps):
         """
@@ -137,7 +200,7 @@ class DisplayManager:
     
     def process_frame_cycle(self, camera_threads):
         """
-        Process one complete frame cycle for all cameras.
+        Process one complete frame cycle for all cameras with AI detection.
         
         Args:
             camera_threads (list): List of CameraThread instances
@@ -151,6 +214,9 @@ class DisplayManager:
         frames, timestamps = self.collect_frames(camera_threads)
         
         if frames:
+            # Apply AI detection to frames
+            frames = self.apply_ai_detection(frames, camera_threads)
+            
             # Check synchronization
             self.check_synchronization(timestamps)
             
@@ -173,5 +239,15 @@ class DisplayManager:
         return True
     
     def cleanup(self):
-        """Clean up display resources."""
+        """Clean up display resources and AI detector."""
         cv2.destroyAllWindows()
+        
+        # Print AI detection statistics if available
+        if self.human_detector and AI_DETECTION_SETTINGS["enabled"]:
+            stats = self.human_detector.get_stats()
+            print(f"\n🤖 AI Detection Statistics:")
+            print(f"   Total frames processed: {stats['total_frames_processed']}")
+            print(f"   Total humans detected: {stats['total_detections']}")
+            print(f"   Average inference time: {stats['avg_inference_time']:.3f}s")
+            if stats['total_frames_processed'] > 0:
+                print(f"   Detection rate: {stats['total_detections']/stats['total_frames_processed']:.2f} humans/frame")

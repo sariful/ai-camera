@@ -7,6 +7,9 @@ Handles frame processing, synchronization, display of multiple camera feeds, and
 import cv2
 import time
 import numpy as np
+import pygame
+import threading
+import os
 from config import CAMERA_SETTINGS, DISPLAY_SETTINGS, TEXT_SETTINGS, APP_CONSTANTS, AI_DETECTION_SETTINGS
 from ai_detector import HumanDetector
 
@@ -33,6 +36,60 @@ class DisplayManager:
                 print(f"⚠️ Failed to initialize AI detection: {e}")
                 print("📷 Continuing without AI detection...")
                 self.human_detector = None
+        
+        # Initialize sound system
+        self.sound_initialized = False
+        self.last_sound_time = 0
+        self._init_sound_system()
+        
+    def _init_sound_system(self):
+        """Initialize pygame mixer for sound playback."""
+        if not AI_DETECTION_SETTINGS["sound_alert"]:
+            return
+            
+        try:
+            pygame.mixer.init()
+            self.sound_initialized = True
+            print("🔊 Sound system initialized successfully!")
+            
+            # Verify sound file exists
+            sound_file = AI_DETECTION_SETTINGS["alert_sound_file"]
+            if not os.path.exists(sound_file):
+                print(f"⚠️ Sound file not found: {sound_file}")
+                self.sound_initialized = False
+            else:
+                print(f"✅ Sound file found: {sound_file}")
+                
+        except Exception as e:
+            print(f"⚠️ Failed to initialize sound system: {e}")
+            self.sound_initialized = False
+            
+    def _play_alert_sound(self):
+        """Play the alert sound in a separate thread to avoid blocking."""
+        if not self.sound_initialized or not AI_DETECTION_SETTINGS["sound_alert"]:
+            return
+            
+        current_time = time.time()
+        cooldown = AI_DETECTION_SETTINGS["alert_cooldown"]
+        
+        # Check cooldown period
+        if current_time - self.last_sound_time < cooldown:
+            return
+            
+        def play_sound():
+            try:
+                sound_file = AI_DETECTION_SETTINGS["alert_sound_file"]
+                pygame.mixer.music.load(sound_file)
+                pygame.mixer.music.play()
+                print(f"🔊 Playing alert sound for human detection on camera 3")
+            except Exception as e:
+                print(f"⚠️ Error playing sound: {e}")
+                
+        # Play sound in a separate thread to avoid blocking the main loop
+        sound_thread = threading.Thread(target=play_sound, daemon=True)
+        sound_thread.start()
+        
+        self.last_sound_time = current_time
         
     def create_placeholder_frame(self, camera_id):
         """
@@ -115,6 +172,12 @@ class DisplayManager:
                     max_detections = AI_DETECTION_SETTINGS["max_detections_per_frame"]
                     if len(detections) > max_detections:
                         detections = detections[:max_detections]
+                    
+                    # Check if this is camera 3 (index 2) and play sound if humans detected
+                    if (detections and 
+                        AI_DETECTION_SETTINGS["sound_alert"] and 
+                        camera_id == AI_DETECTION_SETTINGS["sound_alert_camera"]):
+                        self._play_alert_sound()
                     
                     # Draw detections if enabled
                     if AI_DETECTION_SETTINGS["draw_bounding_boxes"] and detections:
@@ -281,6 +344,14 @@ class DisplayManager:
     def cleanup(self):
         """Clean up display resources and AI detector."""
         cv2.destroyAllWindows()
+        
+        # Cleanup sound system
+        if self.sound_initialized:
+            try:
+                pygame.mixer.quit()
+                print("🔊 Sound system cleaned up successfully!")
+            except Exception as e:
+                print(f"⚠️ Error cleaning up sound system: {e}")
         
         # Print AI detection statistics if available
         if self.human_detector and AI_DETECTION_SETTINGS["enabled"]:

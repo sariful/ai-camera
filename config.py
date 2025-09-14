@@ -165,7 +165,7 @@ RTSP_URLS = [
 # Camera settings
 CAMERA_SETTINGS = {
     "buffer_size": 1,           # Minimize buffer for low latency
-    "fps": 25,                  # Target FPS
+    "fps": 50,                  # Target FPS
     "frame_width": DYNAMIC_FRAME_WIDTH,   # Dynamically calculated frame width based on screen size
     "frame_height": DYNAMIC_FRAME_HEIGHT, # Dynamically calculated frame height based on screen size
     "max_reconnect_attempts": 5, # Maximum reconnection attempts
@@ -175,7 +175,7 @@ CAMERA_SETTINGS = {
 
 # Display settings
 DISPLAY_SETTINGS = {
-    "target_fps": 25,           # Target display FPS
+    "target_fps": 50,           # Target display FPS
     "sync_threshold": 2,      # Maximum acceptable time difference for sync (seconds)
     "window_title": "3 Cameras - 2x2 Grid Layout"
 }
@@ -211,5 +211,9 @@ AI_DETECTION_SETTINGS = {
     "box_thickness": 2,         # Thickness of bounding boxes
     "max_detections_per_frame": 10, # Maximum number of detections to process per frame
     "enable_stats_overlay": True,    # Show detection statistics on frames
-    "stats_position": (10, 30)      # Position for stats text overlay
+    "stats_position": (10, 30),      # Position for stats text overlay
+    "sound_alert": True,          # Enable sound alert on detection
+    "sound_alert_camera": 2,      # Camera index for sound alerts (0-based, camera 3 = index 2)
+    "alert_cooldown": 3,           # Cooldown period between sound alerts (seconds)
+    "alert_sound_file": "assets/beep-329314.mp3" # Sound file to play on detection
 }

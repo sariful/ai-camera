@@ -4,11 +4,30 @@ Configuration module for AI Camera System
 Contains all configuration parameters, RTSP URLs, and constants used throughout the application.
 """
 
-# 🔗 RTSP URLs for 3 channels (adjust username, password, IP, ports if needed)
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Get RTSP credentials from environment variables
+RTSP_USERNAME = os.getenv('RTSP_USERNAME', 'admin')
+RTSP_PASSWORD = os.getenv('RTSP_PASSWORD')
+RTSP_HOST = os.getenv('RTSP_HOST', '192.168.0.103')
+RTSP_PORT = os.getenv('RTSP_PORT', '554')
+
+# Validate that password is provided
+if not RTSP_PASSWORD:
+    raise ValueError(
+        "RTSP_PASSWORD environment variable is required. "
+        "Please set it in your .env file or environment."
+    )
+
+# 🔗 RTSP URLs for 3 channels (credentials loaded from environment variables)
 RTSP_URLS = [
-    "rtsp://admin:pass12345@192.168.0.103:554/cam/realmonitor?channel=2&subtype=1",
-    "rtsp://admin:pass12345@192.168.0.103:554/cam/realmonitor?channel=1&subtype=1",
-    "rtsp://admin:pass12345@192.168.0.103:554/cam/realmonitor?channel=4&subtype=1"
+    f"rtsp://{RTSP_USERNAME}:{RTSP_PASSWORD}@{RTSP_HOST}:{RTSP_PORT}/cam/realmonitor?channel=2&subtype=1",
+    f"rtsp://{RTSP_USERNAME}:{RTSP_PASSWORD}@{RTSP_HOST}:{RTSP_PORT}/cam/realmonitor?channel=1&subtype=1",
+    f"rtsp://{RTSP_USERNAME}:{RTSP_PASSWORD}@{RTSP_HOST}:{RTSP_PORT}/cam/realmonitor?channel=4&subtype=1"
 ]
 
 # Camera settings

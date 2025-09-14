@@ -63,14 +63,31 @@ ai-camera/
 pip install -r requirements.txt
 ```
 
-2. Configure your camera URLs in `config.py`:
-```python
-RTSP_URLS = [
-    "rtsp://username:password@ip:port/path1",
-    "rtsp://username:password@ip:port/path2",
-    "rtsp://username:password@ip:port/path3"
-]
+2. Set up environment variables for camera credentials:
+```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Edit the .env file with your actual camera credentials
+nano .env  # or use your preferred editor
 ```
+
+3. Configure your `.env` file with your camera details:
+```bash
+# RTSP Camera Credentials
+RTSP_USERNAME=admin
+RTSP_PASSWORD=your_actual_password_here
+
+# RTSP Camera Network Settings  
+RTSP_HOST=192.168.0.103
+RTSP_PORT=554
+```
+
+**Important Security Notes:**
+- Never commit `.env` files to version control
+- The `.env` file is already included in `.gitignore`
+- Use strong, unique passwords for your cameras
+- Consider changing default camera passwords
 
 ## Usage
 

@@ -1,1 +1,6 @@
 __pycache__
+
+# Environment files containing sensitive data
+.env
+.env.local
+.env.*.local

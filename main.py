@@ -57,8 +57,6 @@ def process_camera(camera_config):
                     processDetections(frame, camera_config, now)
                     last_sent = now
                     
-    cap.release()
-
 # Start a thread for each camera
 threads = []
 for camera in camera_manager.get_cameras():

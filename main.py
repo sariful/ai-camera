@@ -4,15 +4,15 @@ from ultralytics import YOLO
 import pygame
 from utils.camera_config import CameraManager
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Initialize camera manager with configuration from config.json
-with open('config.json', 'r') as f:
+config_path = os.path.join(script_dir, 'config.json')
+with open(config_path, 'r') as f:
     config = json.load(f)
 
-print(config["cameras"])
-
 camera_manager = CameraManager(config["cameras"])
-MODEL = f"{config["model"]}.pt"
+MODEL = os.path.join(script_dir, f"{config['model']}.pt")
 
 model = YOLO(MODEL)
 
@@ -21,7 +21,9 @@ def processDetections(frame, camera_config, timestamp):
 
     if camera_config.features.save_images:
         try:
-            filename = f"dumps/{camera_config.id}_{int(timestamp)}.jpg"
+            dumps_dir = os.path.join(script_dir, "dumps")
+            os.makedirs(dumps_dir, exist_ok=True)  # Ensure dumps directory exists
+            filename = os.path.join(dumps_dir, f"{camera_config.id}_{int(timestamp)}.jpg")
             cv2.imwrite(filename, frame)
         except Exception as e:
             print(f"⚠️ Error saving image: {e}")
@@ -29,7 +31,8 @@ def processDetections(frame, camera_config, timestamp):
     if camera_config.features.sound_alert:
         try:
             pygame.mixer.init()
-            pygame.mixer.music.load("assets/beep-329314.mp3")
+            sound_path = os.path.join(script_dir, "assets/beep-329314.mp3")
+            pygame.mixer.music.load(sound_path)
             pygame.mixer.music.play()
             print(f"🔊 Playing alert sound for detection on Camera {camera_config.name}")
         except Exception as e:

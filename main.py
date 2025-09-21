@@ -1,70 +1,60 @@
-#!/usr/bin/env python3
-"""
-Main Application File for AI Camera System
+import os
+from dotenv import load_dotenv
+import cv2, time, threading, requests
+from ultralytics import YOLO
+import pygame
 
-Coordinates all modules and handles the main application loop for synchronized multi-camera display.
-"""
+# Load env variables
+load_dotenv()
 
-import time
-from config import RTSP_URLS
-from camera_thread import CameraThread
-from display_manager import DisplayManager
-from utils import (
-    initialize_cameras, 
-    start_all_cameras, 
-    stop_all_cameras, 
-    log_application_start, 
-    log_application_end,
-    get_application_stats
-)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+CHAT_ID = os.getenv("CHAT_ID")
 
+# Split comma-separated cameras into a list and strip whitespace
+CAMERAS = [cam.strip() for cam in os.getenv("CAMERAS", "").split(",") if cam.strip()]
 
-def main():
-    """
-    Main application entry point.
-    
-    Initializes cameras, starts display loop, and handles cleanup.
-    """
-    start_time = time.time()
-    
-    # Log startup information
-    log_application_start(RTSP_URLS)
-    
-    # Initialize components
-    camera_threads = initialize_cameras(RTSP_URLS)
-    display_manager = DisplayManager()
+model = YOLO("yolov8n.pt")
+
+def processDetections(frame, cam_num, timestamp):
+    print(f"Processing detections for Camera {cam_num} at {timestamp}")
+    # Play alert sound
+
+    try:
+        filename = f"dumps/{cam_num}_{int(timestamp)}.jpg"
+        cv2.imwrite(filename, frame)
+    except Exception as e:
+        print(f"⚠️ Error saving image: {e}")
     
     try:
-        # Start all cameras
-        start_all_cameras(camera_threads)
-        
-        # Main display loop
-        print("🎬 Starting main display loop...")
-        while True:
-            # Process one frame cycle
-            if not display_manager.process_frame_cycle(camera_threads):
-                break  # User pressed 'q' to quit
-                
-    except KeyboardInterrupt:
-        print("\n⚠️ Received interrupt signal...")
-        
+        pygame.mixer.init()
+        pygame.mixer.music.load("assets/beep-329314.mp3")
+        pygame.mixer.music.play()
+        print(f"🔊 Playing alert sound for detection on Camera {cam_num}")
     except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
-        
-    finally:
-        # Clean shutdown
-        display_manager.cleanup()
-        stop_all_cameras(camera_threads)
-        
-        # Show final statistics
-        stats = get_application_stats(camera_threads)
-        print(f"\n📊 Final Statistics:")
-        print(f"   Connected cameras: {stats['connected_cameras']}/{stats['total_cameras']}")
-        print(f"   Connection rate: {stats['connection_rate']:.1%}")
-        
-        # Log application end
-        log_application_end(start_time)
+        print(f"⚠️ Error playing sound: {e}")
 
+def process_camera(cam_url, cam_num):
+    cap = cv2.VideoCapture(cam_url)
+    last_sent = 0
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            time.sleep(1)
+            continue
+        results = model.predict(frame, classes=[0], conf=0.6, verbose=False)
+        if len(results[0].boxes) > 0:
+            now = time.time()
+            if now - last_sent > 5:
+                processDetections(frame, cam_num, now)
+                last_sent = now
+    cap.release()
 
-if __name__ == "__main__":
-    main()
+threads = []
+for i, url in enumerate(CAMERAS, start=1):
+    t = threading.Thread(target=process_camera, args=(url, i), daemon=True)
+    t.start()
+    threads.append(t)
+
+print("Monitoring started for all cameras.")
+while True:
+    time.sleep(60)

@@ -1,9 +1,9 @@
 import os
 from dotenv import load_dotenv
-import cv2, time, threading, requests
+import cv2, time, threading
 from ultralytics import YOLO
 import pygame
-from camera_config import CameraManager
+from utils.camera_config import CameraManager
 
 # Load env variables
 load_dotenv()

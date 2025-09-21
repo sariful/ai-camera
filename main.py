@@ -1,8 +1,12 @@
 import os
 import cv2, time, threading, json
 from ultralytics import YOLO
-import pygame
 from utils.camera_config import CameraManager
+from utils.person_id import person_id
+from utils.send_message import send_telegram_message
+from utils.sound_alert import sound_alert
+from utils.connect_camera import connect_camera
+from utils.save_image import save_image
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,47 +23,18 @@ model = YOLO(MODEL)
 def processDetections(frame, camera_config, timestamp):
     print(f"Processing detections for Camera {camera_config.name} at {timestamp}")
 
+    if camera_config.features.person_identification:
+        person_id(frame=frame, camera_config=camera_config, timestamp=timestamp)
+
     if camera_config.features.save_images:
-        try:
-            dumps_dir = os.path.join(script_dir, "dumps")
-            os.makedirs(dumps_dir, exist_ok=True)  # Ensure dumps directory exists
-            filename = os.path.join(dumps_dir, f"{camera_config.id}_{int(timestamp)}.jpg")
-            cv2.imwrite(filename, frame)
-        except Exception as e:
-            print(f"⚠️ Error saving image: {e}")
+        image_path = save_image(frame=frame, camera_config=camera_config, timestamp=timestamp)
+
+    if camera_config.features.send_message:
+        send_telegram_message(image_path=image_path, text=f"🚨 Detection on Camera: {camera_config.name} at {timestamp}")
     
     if camera_config.features.sound_alert:
-        try:
-            pygame.mixer.init()
-            sound_path = os.path.join(script_dir, "assets/beep-329314.mp3")
-            pygame.mixer.music.load(sound_path)
-            pygame.mixer.music.play()
-            print(f"🔊 Playing alert sound for detection on Camera {camera_config.name}")
-        except Exception as e:
-            print(f"⚠️ Error playing sound: {e}")
-
-def connect_camera(camera_config, max_attempts=None):
-    """Attempts to connect to the camera with exponential backoff."""
-    base_delay = 1  # Start with 1 second delay
-    max_delay = 30  # Maximum delay between attempts
-    attempt = 0
-    
-    while max_attempts is None or attempt < max_attempts:
-        attempt += 1
-        try:
-            cap = cv2.VideoCapture(camera_config.url)
-            if cap.isOpened():
-                print(f"✅ Successfully connected to camera {camera_config.name} (attempt {attempt})")
-                return cap
-        except Exception as e:
-            print(f"⚠️ Error connecting to camera {camera_config.name}: {str(e)}")
-        
-        # Calculate next delay with exponential backoff
-        delay = min(base_delay * (2 ** (attempt - 1)), max_delay)
-        print(f"⏳ Retrying connection to camera {camera_config.name} in {delay} seconds...")
-        time.sleep(delay)
-    
-    return None
+        sound_alert()
+        print(f"🔊 Playing alert sound for detection on Camera: {camera_config.name}")
 
 def process_camera(camera_config):
     cap = None

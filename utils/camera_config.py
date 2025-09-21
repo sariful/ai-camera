@@ -9,6 +9,7 @@ class CameraFeatures:
     sound_alert: bool = True
     confidence_threshold: float = 0.6
     save_images: bool = False
+    send_message: bool = False
 
 @dataclass
 class CameraConfig:

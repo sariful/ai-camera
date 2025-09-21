@@ -1,12 +1,18 @@
 import os
 import requests
-from dotenv import load_dotenv
+import json
 from typing import Optional
 
-load_dotenv()
 
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Initialize camera manager with configuration from config.json
+config_path = os.path.join(script_dir, '../config.json')
+with open(config_path, 'r') as f:
+    config = json.load(f)
+
+BOT_TOKEN = config["BOT_TOKEN"]
+CHAT_ID = config["CHAT_ID"]
 
 def send_telegram_message(
         text: Optional[str] = None, 

@@ -8,6 +8,7 @@ class CameraFeatures:
     person_identification: bool = False
     sound_alert: bool = True
     confidence_threshold: float = 0.6
+    save_images: bool = False
 
 @dataclass
 class CameraConfig:
@@ -17,14 +18,13 @@ class CameraConfig:
     features: CameraFeatures
 
 class CameraManager:
-    def __init__(self, config_json: str):
+    def __init__(self, cameras_config: list):
         self.cameras: List[CameraConfig] = []
-        self._parse_config(config_json)
+        self._parse_config(cameras_config)
 
-    def _parse_config(self, config_json: str):
+    def _parse_config(self, cameras_config: list):
         try:
-            config = json.loads(config_json)
-            for camera in config['cameras']:
+            for camera in cameras_config:
                 features = CameraFeatures(**camera['features'])
                 camera_config = CameraConfig(
                     id=camera['id'],

@@ -1,16 +1,18 @@
 import os
-from dotenv import load_dotenv
-import cv2, time, threading
+import cv2, time, threading, json
 from ultralytics import YOLO
 import pygame
 from utils.camera_config import CameraManager
 
-# Load env variables
-load_dotenv()
 
-# Initialize camera manager with configuration from .env
-camera_manager = CameraManager(os.getenv("CAMERAS_CONFIG", "{}"))
-MODEL = os.getenv("model", "yolov8n.pt")
+# Initialize camera manager with configuration from config.json
+with open('config.json', 'r') as f:
+    config = json.load(f)
+
+print(config["cameras"])
+
+camera_manager = CameraManager(config["cameras"])
+MODEL = f"{config["model"]}.pt"
 
 model = YOLO(MODEL)
 

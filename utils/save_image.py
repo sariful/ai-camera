@@ -7,7 +7,7 @@ def save_image(frame, camera_config, timestamp):
     try:
         dumps_dir = os.path.join(script_dir, "dumps")
         os.makedirs(dumps_dir, exist_ok=True)  # Ensure dumps directory exists
-        filename = os.path.join(dumps_dir, f"{camera_config.id}_{int(timestamp)}.jpg")
+        filename = os.path.join(dumps_dir, f"{camera_config.name}_{timestamp.strftime('%Y-%m-%d %H-%M-%S')}.jpg")
         cv2.imwrite(filename, frame)
 
         return filename

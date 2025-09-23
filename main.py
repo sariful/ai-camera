@@ -86,7 +86,7 @@ for camera in camera_manager.get_cameras():
         target=process_camera, 
         args=(camera,), 
         daemon=True,
-        name=f"Camera-{camera.name}"
+        name=camera.name
     )
     t.start()
     threads.append(t)

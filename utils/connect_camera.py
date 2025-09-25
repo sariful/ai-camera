@@ -10,10 +10,18 @@ def connect_camera(camera_config, max_attempts=None):
     while max_attempts is None or attempt < max_attempts:
         attempt += 1
         try:
-            cap = cv2.VideoCapture(camera_config.url)
+            cap = cv2.VideoCapture(camera_config.url, cv2.CAP_FFMPEG)
             if cap.isOpened():
-                print(f"✅ Successfully connected to camera {camera_config.name} (attempt {attempt})")
-                return cap
+                # Optimize for real-time streaming - minimize buffer lag
+                cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Minimal buffer
+                cap.set(cv2.CAP_PROP_FPS, 15)        # Limit FPS for better performance
+                
+                ret, frame = cap.read()
+                if ret:
+                    print(f"✅ Successfully connected to camera {camera_config.name} (attempt {attempt})")
+                    return cap
+                else:
+                    cap.release() 
         except Exception as e:
             print(f"⚠️ Error connecting to camera {camera_config.name}: {str(e)}")
         

@@ -19,6 +19,7 @@ camera_manager = CameraManager(config["cameras"])
 MODEL = os.path.join(script_dir, f"{config['model']}.pt")
 
 model = YOLO(MODEL)
+model.fuse()  # Optimize model for inference
 
 def processDetections(frame, camera_config, timestamp):
     print(f"Processing detections for Camera {camera_config.name} at {timestamp}")
@@ -45,6 +46,7 @@ def process_camera(camera_config):
         if cap is None:
             cap = connect_camera(camera_config)
             if cap is None:
+                time.sleep(2)  # Wait before retry
                 continue
         
         ret, frame = cap.read()
@@ -54,6 +56,7 @@ def process_camera(camera_config):
                 connection_lost = True
             cap.release()
             cap = None
+            time.sleep(1)
             continue
         
         # Reset connection_lost flag when we successfully read a frame
@@ -77,7 +80,7 @@ def process_camera(camera_config):
                         last_sent = now
         except Exception as e:
             print(f"⚠️ Error processing frame from camera {camera_config.name}: {str(e)}")
-            time.sleep(1)  # Brief pause before next frame
+            time.sleep(0.1)  # Brief pause before next frame
                     
 # Start a thread for each camera
 threads = []
@@ -94,4 +97,4 @@ for camera in camera_manager.get_cameras():
 
 print(f"Monitoring started for {len(threads)} cameras.")
 while True:
-    time.sleep(60)
+    time.sleep(30)  # Reduced sleep time for better responsiveness
